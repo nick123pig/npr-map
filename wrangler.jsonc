@@ -1,0 +1,11 @@
+{
+  // Cloudflare Workers static-assets deployment (no Worker code needed).
+  // Build first: npm run build
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "npr-map",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

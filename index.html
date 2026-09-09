@@ -1,207 +1,131 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<script src="http://d3js.org/d3.v3.min.js"></script>
-<style type="text/css">
+  <head>
+    <meta charset="utf-8" />
+    <!--
+      NPR News Station Map: find your closest NPR News member station.
+      SPDX-License-Identifier: GPL-3.0-or-later
+      Data: NPR member directory, FCC licensed transmitter data,
+      Open-Meteo geocoding. Basemap (c) OpenFreeMap & OpenStreetMap.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-/* On mouse hover, lighten state color */
-path:hover {
-  fill-opacity: .7;
-}
+    <!-- Primary SEO -->
+    <title>Find Your Closest NPR News Station: Interactive Coverage Map</title>
+    <meta
+      name="description"
+      content="Free interactive map of 900+ NPR News member radio stations across the US. Click anywhere or use your location to find the nearest NPR News station you can tune into, with FM broadcast coverage estimated from FCC transmitter data. Music-only services excluded."
+    />
+    <meta
+      name="keywords"
+      content="NPR station finder, NPR News, public radio, FM radio map, radio station coverage, local NPR station, member stations, broadcast contour"
+    />
+    <meta name="author" content="NPR Station Map" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#0f172a" />
+    <!--
+      Replace with your production URL before deploying (also update
+      public/sitemap.xml and public/robots.txt).
+    -->
+    <link rel="canonical" href="https://nprmap.com/" />
 
-/* Style for Custom Tooltip */
-div.tooltip {   
-  position: absolute;           
-  text-align: center;           
-  width: 60px;                  
-  height: 28px;                 
-  padding: 2px;             
-  font: 12px sans-serif;        
-  background: white;   
-  border: 0px;      
-  border-radius: 8px;           
-  pointer-events: none;         
-}
-        
-/* Legend Font Style */
-body {
-  font: 11px sans-serif;
-}
-        
-/* Legend Position Style */
-.legend {
-  position:absolute;
-  left:800px;
-  top:350px;
-}
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="/favicon.png" />
 
-</style>
-</head>
-<body>
-<script type="text/javascript">
+    <!-- Open Graph (Facebook, LinkedIn, Slack, …) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NPR News Station Map" />
+    <meta
+      property="og:title"
+      content="Find Your Closest NPR News Station: Interactive Coverage Map"
+    />
+    <meta
+      property="og:description"
+      content="Click anywhere on the US map to find the nearest NPR News member station, with FM broadcast coverage estimated from FCC transmitter data."
+    />
+    <meta property="og:url" content="https://nprmap.com/" />
+    <meta property="og:image" content="https://nprmap.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Map of NPR News radio stations with broadcast coverage rings across the United States"
+    />
+    <meta property="og:locale" content="en_US" />
 
-/*  This visualization was made possible by modifying code provided by:
+    <!-- Twitter/X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Find Your Closest NPR News Station: Interactive Coverage Map"
+    />
+    <meta
+      name="twitter:description"
+      content="Click anywhere on the US map to find the nearest NPR News member station, with FM broadcast coverage estimated from FCC transmitter data."
+    />
+    <meta name="twitter:image" content="https://nprmap.com/og-image.png" />
+    <meta
+      name="twitter:image:alt"
+      content="Map of NPR News radio stations with broadcast coverage rings across the United States"
+    />
 
-Scott Murray, Choropleth example from "Interactive Data Visualization for the Web" 
-https://github.com/alignedleft/d3-book/blob/master/chapter_12/05_choropleth.html   
-    
-Malcolm Maclean, tooltips example tutorial
-http://www.d3noob.org/2013/01/adding-tooltips-to-d3js-graph.html
-
-Mike Bostock, Pie Chart Legend
-http://bl.ocks.org/mbostock/3888852  */
-
-    
-//Width and height of map
-var width = 960;
-var height = 500;
-
-// D3 Projection
-var projection = d3.geo.albersUsa()
-           .translate([width/2, height/2])    // translate to center of screen
-           .scale([1000]);          // scale things down so see entire US
-        
-// Define path generator
-var path = d3.geo.path()               // path generator that will convert GeoJSON to SVG paths
-         .projection(projection);  // tell path generator to use albersUsa projection
-
-    
-// Define linear scale for output
-var color = d3.scale.linear()
-        .range(["rgb(213,222,217)","rgb(69,173,168)","rgb(84,36,55)","rgb(217,91,67)"]);
-
-var legendText = ["Cities Lived", "States Lived", "States Visited", "Nada"];
-
-//Create SVG element and append map to the SVG
-var svg = d3.select("body")
-      .append("svg")
-      .attr("width", width)
-      .attr("height", height);
-        
-// Append Div for tooltip to SVG
-var div = d3.select("body")
-        .append("div")   
-        .attr("class", "tooltip")               
-        .style("opacity", 0);
-
-// Load in my states data!
-d3.csv("stateslived.csv", function(data) {
-color.domain([0,1,2,3]); // setting the range of the input data
-
-// Load GeoJSON data and merge with states data
-d3.json("us-states.json", function(json) {
-
-// Loop through each state data value in the .csv file
-for (var i = 0; i < data.length; i++) {
-
-  // Grab State Name
-  var dataState = data[i].state;
-
-  // Grab data value 
-  var dataValue = data[i].visited;
-
-  // Find the corresponding state inside the GeoJSON
-  for (var j = 0; j < json.features.length; j++)  {
-    var jsonState = json.features[j].properties.name;
-
-    if (dataState == jsonState) {
-
-    // Copy the data value into the JSON
-    json.features[j].properties.visited = dataValue; 
-
-    // Stop looking through the JSON
-    break;
-    }
-  }
-}
-    
-// Bind the data to the SVG and create one path per GeoJSON feature
-svg.selectAll("path")
-  .data(json.features)
-  .enter()
-  .append("path")
-  .attr("d", path)
-  .style("stroke", "#fff")
-  .style("stroke-width", "1")
-  .style("fill", function(d) {
-
-  // Get data value
-  var value = d.properties.visited;
-
-  if (value) {
-  //If value exists…
-  return color(value);
-  } else {
-  //If value is undefined…
-  return "rgb(213,222,217)";
-  }
-});
-
-     
-// Map the cities I have lived in!
-d3.csv("cities-lived.csv", function(data) {
-
-svg.selectAll("circle")
-  .data(data)
-  .enter()
-  .append("circle")
-  .attr("cx", function(d) {
-    return projection([d.lon, d.lat])[0];
-  })
-  .attr("cy", function(d) {
-    return projection([d.lon, d.lat])[1];
-  })
-  .attr("r", function(d) {
-    return Math.sqrt(d.years) * 4;
-  })
-    .style("fill", "rgb(217,91,67)")  
-    .style("opacity", 0.85) 
-
-  // Modification of custom tooltip code provided by Malcolm Maclean, "D3 Tips and Tricks" 
-  // http://www.d3noob.org/2013/01/adding-tooltips-to-d3js-graph.html
-  .on("mouseover", function(d) {      
-      div.transition()        
-           .duration(200)      
-           .style("opacity", .9);      
-           div.text(d.place)
-           .style("left", (d3.event.pageX) + "px")     
-           .style("top", (d3.event.pageY - 28) + "px");    
-  })   
-
-    // fade out tooltip on mouse out               
-    .on("mouseout", function(d) {       
-        div.transition()        
-           .duration(500)      
-           .style("opacity", 0);   
-    });
-});  
-        
-// Modified Legend Code from Mike Bostock: http://bl.ocks.org/mbostock/3888852
-var legend = d3.select("body").append("svg")
-            .attr("class", "legend")
-          .attr("width", 140)
-          .attr("height", 200)
-          .selectAll("g")
-          .data(color.domain().slice().reverse())
-          .enter()
-          .append("g")
-          .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-    legend.append("rect")
-        .attr("width", 18)
-        .attr("height", 18)
-        .style("fill", color);
-
-    legend.append("text")
-        .data(legendText)
-          .attr("x", 24)
-          .attr("y", 9)
-          .attr("dy", ".35em")
-          .text(function(d) { return d; });
-  });
-
-});
-</script>
-</body>
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "NPR News Station Map",
+        "url": "https://nprmap.com/",
+        "applicationCategory": "MapApplication",
+        "operatingSystem": "Any",
+        "description": "Interactive map for finding your closest NPR News member radio station. Broadcast coverage is estimated from FCC transmitter data (ERP, HAAT and station class). Music-only services are excluded.",
+        "inLanguage": "en",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Find the nearest NPR News member station by map click or geolocation",
+          "Search US cities and ZIP codes",
+          "FM coverage bands estimated from FCC ERP/HAAT/class data",
+          "Alternative receivable stations at your location"
+        ],
+        "audience": {
+          "@type": "Audience",
+          "audienceType": "Public radio listeners in the United States"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <!--
+      Static fallback for crawlers and no-JS visitors. The app replaces
+      this content when it mounts.
+    -->
+    <noscript>
+      <main style="max-width: 42rem; margin: 3rem auto; padding: 0 1rem; font-family: system-ui, sans-serif; color: #1c1917;">
+        <h1>Find Your Closest NPR News Station</h1>
+        <p>
+          This is an interactive map of more than 900 NPR News member radio
+          stations across the United States. Click anywhere on the map or
+          share your location to find the nearest station carrying NPR News
+          programming, along with alternative stations receivable at your
+          location.
+        </p>
+        <p>
+          Coverage rings approximate each station's broadcast range,
+          estimated from FCC transmitter data; coverage may not be accurate.
+        </p>
+        <p>
+          Only NPR News members are listed; music-only services (classical,
+          jazz) are excluded.
+        </p>
+        <p><strong>This page requires JavaScript for the interactive map.</strong></p>
+      </main>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>

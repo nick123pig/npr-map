@@ -1,0 +1,5 @@
+# Replace the sitemap URL with your production domain before deploying.
+User-agent: *
+Allow: /
+
+Sitemap: https://nprmap.com/sitemap.xml

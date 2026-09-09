@@ -1,0 +1,32 @@
+{
+  "name": "npr-map",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Find your closest NPR News member station on an interactive map, with FM broadcast coverage estimated from FCC transmitter data.",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nick123pig/nprmap.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nick123pig/nprmap/issues"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "refresh": "node scripts/refresh.mjs",
+    "serve": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "svelte": "^5.0.0",
+    "vite": "^6.0.0",
+    "wrangler": "^4.0.0"
+  },
+  "dependencies": {
+    "maplibre-gl": "^5.0.0"
+  }
+}
