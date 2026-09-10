@@ -22,7 +22,6 @@
   let stations = $state([]);
   let loadError = $state('');
   let selected = $state(null); // { station, km }
-  let showRings = $state(true);
   let query = $state('');
   let searchResults = $state([]);
   let searching = $state(false);
@@ -214,13 +213,6 @@
         }
       : empty;
     map.getSource('selected-station').setData(data);
-  });
-
-  $effect(() => {
-    if (!mapReady || !ringSource) return;
-    const v = showRings ? 'visible' : 'none';
-    map.setLayoutProperty('rings-fill', 'visibility', v);
-    map.setLayoutProperty('rings-line', 'visibility', v);
   });
 
   function select(hit) {
@@ -456,10 +448,6 @@
         {locating ? 'Locating…' : '📍 Use my location'}
       </button>
 
-      <label class="toggle">
-        <input type="checkbox" bind:checked={showRings} />
-        Show coverage rings
-      </label>
     </div>
 
     {#if loadError}
@@ -467,19 +455,25 @@
     {/if}
 
     {#if selected}
-      <div class="station-card">
-        <div class="freq">
-          {fmtFreq(selected.station)}
+      {@const outOfRange = selected.km != null && selected.station.rangeKm && selected.km > selected.station.rangeKm * 2}
+      <div class="station-card" class:out-of-range={outOfRange}>
+        <div class="station-header">
+          <div class="callsign">{selected.station.callsign}</div>
+          <div class="freq">{fmtFreq(selected.station)}</div>
         </div>
-        <div class="callsign">{selected.station.callsign}</div>
-        {#if selected.station.network}
+        {#if selected.station.network && selected.station.network !== selected.station.callsign}
           <div class="network">{selected.station.network}</div>
         {/if}
         <div class="place">
           {selected.station.city}, {selected.station.state}
         </div>
         {#if selected.km != null}
-          <div class="dist">{fmtKm(selected.km)}</div>
+          <div class="dist">
+            {fmtKm(selected.km)}
+            {#if outOfRange}
+              <span class="warn"> · probably not receivable</span>
+            {/if}
+          </div>
         {/if}
         {#if selected.station.rangeKm}
           <div class="contour">
@@ -498,7 +492,7 @@
 
       {#if alternatives.length}
         <div class="alts">
-          <div class="alts-title">Also receivable from your point:</div>
+          <div class="alts-title">Also potentially receivable:</div>
           {#each alternatives as a (a.station.callsign + a.station.frequency)}
             <button
               type="button"
@@ -514,20 +508,19 @@
         </div>
       {/if}
     {:else if stations.length && mapReady}
-      <p class="hint center">
+      <p class="hint">
         Click anywhere on the map to find the NPR News station nearest to
-        you.
+        you. (music-only stations excluded)
       </p>
     {/if}
 
     <footer>
       <p class="coverage-note">
-        Shaded bands approximate each station's broadcast range, estimated
-        from FCC transmitter data; coverage may not be accurate.
-      </p>
-      <p>
-        NPR News stations only; music-only services excluded. Basemap ©
-        OpenFreeMap & OpenStreetMap.
+        Coverage data may not be accurate. This <a
+          href="https://github.com/nick123pig/nprmap"
+          target="_blank"
+          rel="noreferrer"
+        >open source project</a> is not affiliated with, endorsed by, or sponsored by NPR.
       </p>
     </footer>
   </main>
@@ -659,14 +652,6 @@
     cursor: wait;
   }
 
-  .toggle {
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #44403c;
-  }
-
   .sr-only {
     position: absolute;
     width: 1px;
@@ -695,8 +680,25 @@
     background: #f0fdfa;
     border-radius: 10px;
   }
+  .station-card.out-of-range {
+    border-color: #fca5a5;
+    background: #fef2f2;
+  }
+  .station-card.out-of-range .callsign,
+  .station-card.out-of-range .freq {
+    color: #b91c1c;
+  }
+  .station-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .callsign, .freq {
+    font-size: 1.25rem;
+    font-weight: 800;
+    line-height: 1.1;
+  }
   .freq {
-    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -741,11 +743,6 @@
     color: #78716c;
     white-space: nowrap;
   }
-  .callsign {
-    font-size: 1.5rem;
-    font-weight: 800;
-    line-height: 1.1;
-  }
   .network {
     font-size: 0.78rem;
     color: #57534e;
@@ -761,6 +758,12 @@
     color: #0f766e;
     font-weight: 600;
   }
+  .station-card.out-of-range .dist {
+    color: #b91c1c;
+  }
+  .warn {
+    font-weight: 700;
+  }
   .contour {
     margin-top: 2px;
     font-size: 0.75rem;
@@ -770,10 +773,6 @@
     font-size: 0.75rem;
     color: #78716c;
     margin: 8px 0 0;
-  }
-  .hint.center {
-    margin-top: 12px;
-    text-align: center;
   }
   .links {
     margin-top: 8px;
@@ -799,7 +798,7 @@
   footer p:last-child {
     margin-bottom: 0;
   }
-  footer code {
+  footer a {
     color: #78716c;
   }
 

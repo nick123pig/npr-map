@@ -49,7 +49,7 @@ const RANGE_KM = { FM: 50, AM: 40 };
 
 // Music keywords in station/network/stream names.
 const MUSIC_RE =
-  /\b(classical|jazz|blues|folk|bluegrass|opera|symphony|kbach|aaa music)\b/i;
+  /\b(classical|jazz|blues|folk|bluegrass|opera|symphony|kbach|aaa music|music)\b/i;
 const NEWS_RE = /\b(news|talk|information)\b/i;
 
 const STATE_NAMES = [
@@ -438,10 +438,16 @@ async function main() {
     // KWMU-3" are just subchannels of a news network). Music-only is
     // judged on the primary identity: brand, network and MAIN stream
     // ("KBACH Classical 89.5 FM", "Jazz 91.9 WCLK", "CPR Classical").
+    // NPR's localization flag marks music-only relays (e.g. "WPR Music")
+    // that carry a secondary news stream but should not appear in news contexts.
+    const excludeNews =
+      item.eligibility?.localization === 'Exclude from news contexts' ||
+      item.eligibility?.localization === 'Exclude everywhere';
+
     const hasNews = names.some((n) => NEWS_RE.test(n));
     const primaryMusic = primary.some((n) => MUSIC_RE.test(n));
     let unknown = !hasNews && !primaryMusic;
-    let music = primaryMusic && !hasNews;
+    let music = (primaryMusic && !hasNews) || excludeNews;
     if (item.eligibility?.musicOnly === true && unknown) music = true;
 
     const override = newsFormat[call];
